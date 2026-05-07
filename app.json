@@ -24,11 +24,10 @@
         {
           "cameraPermission": "Grit uses the camera to scan food barcodes and take photos of meals."
         }
-      ],
-      "expo-speech"
+      ]
     ],
     "extra": {
-      "gritApiUrl": "https://grit-backend.railway.app",
+      "gritApiUrl": "https://web-production-af49a.up.railway.app",
       "spotifyClientId": "",
       "spotifyRedirectUri": "grit://spotify-callback"
     }
