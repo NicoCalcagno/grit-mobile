@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Grit",
+    "slug": "grit-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "scheme": "grit",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.grit.mobile",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Grit reads your heart rate, calories and fitness data to power AI coaching.",
+        "NSHealthUpdateUsageDescription": "Grit saves completed workouts to HealthKit.",
+        "NSMicrophoneUsageDescription": "Grit uses the microphone for voice commands during workouts.",
+        "NSSpeechRecognitionUsageDescription": "Grit uses speech recognition to understand your voice commands.",
+        "NSCameraUsageDescription": "Grit uses the camera to scan food barcodes and analyse meal photos.",
+        "UIBackgroundModes": ["audio"]
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Grit uses the camera to scan food barcodes and take photos of meals."
+        }
+      ],
+      "expo-speech"
+    ],
+    "extra": {
+      "gritApiUrl": "https://grit-backend.railway.app",
+      "spotifyClientId": "",
+      "spotifyRedirectUri": "grit://spotify-callback"
+    }
+  }
+}
