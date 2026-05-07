@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer, LinkingOptions } from '@react-navigation/native';
+import { NavigationContainer, LinkingOptions, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 
@@ -32,6 +32,20 @@ const linking: LinkingOptions<RootStackParamList> = {
   },
 };
 
+const navTheme = {
+  ...DefaultTheme,
+  dark: true,
+  colors: {
+    ...DefaultTheme.colors,
+    background: colors.background,
+    primary: colors.primary,
+    card: colors.surface,
+    text: colors.text,
+    border: colors.border,
+    notification: colors.primary,
+  },
+};
+
 export default function AppNavigator() {
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
   const { profile } = useUserStore();
@@ -41,7 +55,6 @@ export default function AppNavigator() {
     initialize();
   }, [initialize]);
 
-  // Handle Spotify deep link callback
   useEffect(() => {
     const subscription = Linking.addEventListener('url', ({ url }) => {
       if (url.includes('spotify-callback')) {
@@ -66,20 +79,7 @@ export default function AppNavigator() {
   const needsOnboarding = isAuthenticated && profile && !profile.onboarding_completed;
 
   return (
-    <NavigationContainer
-      linking={linking}
-      theme={{
-        dark: true,
-        colors: {
-          background: colors.background,
-          primary: colors.primary,
-          card: colors.surface,
-          text: colors.text,
-          border: colors.border,
-          notification: colors.primary,
-        },
-      }}
-    >
+    <NavigationContainer linking={linking} theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Auth" component={AuthNavigator} />
