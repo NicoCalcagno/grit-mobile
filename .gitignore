@@ -1,0 +1,31 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.DS_Store
+*.pem
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# iOS
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
+
+# Android
+android/build/
+android/app/build/
+android/.gradle/
+
+# TypeScript
+*.js.map
