@@ -1,0 +1,6 @@
+{
+  "name": "react-native-worklets",
+  "version": "1.0.0",
+  "description": "Stub to satisfy react-native-css-interop peer dep",
+  "main": "index.js"
+}
