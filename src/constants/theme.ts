@@ -20,6 +20,10 @@ export const colors = {
 
   heartRate: '#FF4D00',
   calories: '#FFD700',
+  steps: '#00C4FF',
+  distance: '#00D9C4',
+  hrv: '#A78BFA',
+  vo2: '#34D399',
   protein: '#4CAF50',
   carbs: '#2196F3',
   fat: '#FF9800',
