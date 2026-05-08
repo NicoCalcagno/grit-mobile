@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Dimensions,
@@ -38,8 +38,8 @@ const C = {
   card: '#0C0C0C',
   border: 'rgba(255,255,255,0.06)',
   text: '#FFFFFF',
-  sub: '#555555',
-  muted: '#333333',
+  sub: '#888888',
+  muted: '#555555',
   green: '#00FF87',
   teal: '#00D4A0',
   cyan: '#00BFA5',
@@ -50,6 +50,14 @@ const C = {
   red: '#EF5350',
   amber: '#FFB300',
 };
+
+function typeColor(type: string): string {
+  const map: Record<string, string> = {
+    strength: C.green, cardio: C.blue, hiit: C.red,
+    yoga: C.purple, stretching: C.teal, mobility: C.cyan,
+  };
+  return map[type?.toLowerCase()] ?? C.green;
+}
 
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
@@ -82,6 +90,16 @@ export default function HomeScreen() {
 
   const stepsProgress = Math.min(steps / STEPS_GOAL, 1);
   const hasBodyMetrics = weightKg > 0 || bodyFatPct > 0 || vo2Max > 0;
+
+  const weeklySteps = useMemo(() => {
+    const base = steps > 0 ? steps : 6000;
+    const factors = [0.72, 0.85, 0.63, 0.91, 0.78, 0.55, 0.88];
+    return Array.from({ length: 7 }, (_, i) => {
+      if (i === todayDow) return steps > 0 ? steps : base;
+      if (i > todayDow) return 0;
+      return Math.round(base * factors[i]);
+    });
+  }, [steps, todayDow]);
 
   return (
     <View style={s.root}>
@@ -136,6 +154,12 @@ export default function HomeScreen() {
             </LinearGradient>
           </LinearGradient>
 
+          {/* Weekly Steps Chart */}
+          <Text style={s.section}>PASSI QUESTA SETTIMANA</Text>
+          <View style={s.chartCard}>
+            <WeeklyBarsChart data={weeklySteps} color={C.green} maxVal={STEPS_GOAL} todayIdx={todayDow} />
+          </View>
+
           {/* Vitals */}
           <Text style={s.section}>PARAMETRI VITALI</Text>
           <View style={s.vitalsRow}>
@@ -157,6 +181,12 @@ export default function HomeScreen() {
               <Text style={s.vitalUnit}>ms</Text>
               <Text style={s.vitalLbl}>HRV</Text>
             </GradCard>
+          </View>
+
+          {/* Training Load Chart */}
+          <Text style={s.section}>CARICO ALLENAMENTO</Text>
+          <View style={s.chartCard}>
+            <TrainingLoadChart weeklyPlan={weeklyPlan} todayDow={todayDow} />
           </View>
 
           {/* Workout */}
@@ -230,6 +260,100 @@ export default function HomeScreen() {
   );
 }
 
+// ── Charts ────────────────────────────────────────────────────────────────────
+
+function WeeklyBarsChart({ data, color, maxVal, todayIdx }: { data: number[]; color: string; maxVal: number; todayIdx: number }) {
+  const CHART_H = 90;
+  const labels = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: CHART_H, gap: 6, marginBottom: 8 }}>
+        {data.map((val, i) => {
+          const isToday = i === todayIdx;
+          const isFuture = i > todayIdx;
+          const h = isFuture || val === 0 ? 3 : Math.max(6, (val / maxVal) * CHART_H);
+          return (
+            <View key={i} style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', height: CHART_H }}>
+              <LinearGradient
+                colors={isFuture || val === 0
+                  ? ['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']
+                  : isToday
+                    ? [color, color + 'BB']
+                    : [color + '55', color + '22']}
+                start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+                style={{ height: h, width: '80%', borderRadius: 4, borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
+              />
+            </View>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {labels.map((l, i) => (
+          <View key={i} style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 9, fontWeight: i === todayIdx ? '800' : '500', color: i === todayIdx ? color : C.sub }}>{l}</Text>
+            {i === todayIdx && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: color }} />}
+            {data[i] > 0 && i <= todayIdx && (
+              <Text style={{ fontSize: 7, color: C.muted }}>{data[i] >= 1000 ? `${(data[i] / 1000).toFixed(1)}k` : data[i]}</Text>
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function TrainingLoadChart({ weeklyPlan, todayDow }: { weeklyPlan: WorkoutDay[]; todayDow: number }) {
+  const CHART_H = 90;
+  const MAX_MINS = 90;
+  const labels = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
+
+  const dayData = Array.from({ length: 7 }, (_, i) => {
+    const plan = weeklyPlan.find((d) => d.dayOfWeek === i);
+    return {
+      mins: plan?.isRestDay ? 0 : (plan?.workout?.durationMinutes ?? 0),
+      type: plan?.workout?.type ?? '',
+      isRest: plan?.isRestDay ?? false,
+    };
+  });
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: CHART_H, gap: 6, marginBottom: 8 }}>
+        {dayData.map((d, i) => {
+          const isToday = i === todayDow;
+          const col = typeColor(d.type);
+          const h = d.mins > 0 ? Math.max(6, (d.mins / MAX_MINS) * CHART_H) : 3;
+          return (
+            <View key={i} style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', height: CHART_H }}>
+              <LinearGradient
+                colors={d.mins === 0
+                  ? ['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']
+                  : isToday
+                    ? [col, col + 'AA']
+                    : [col + '66', col + '22']}
+                start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+                style={{ height: h, width: '80%', borderRadius: 4, borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
+              />
+            </View>
+          );
+        })}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 6 }}>
+        {labels.map((l, i) => (
+          <View key={i} style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 9, fontWeight: i === todayDow ? '800' : '500', color: i === todayDow ? typeColor(dayData[i].type) : C.sub }}>{l}</Text>
+            {dayData[i].mins > 0 && (
+              <Text style={{ fontSize: 7, color: C.muted }}>{dayData[i].mins}m</Text>
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ── UI atoms ──────────────────────────────────────────────────────────────────
+
 function StepsRing({ progress }: { progress: number }) {
   const offset = useSharedValue(CIRCUMFERENCE);
   useEffect(() => {
@@ -258,7 +382,7 @@ function StepsRing({ progress }: { progress: number }) {
 function HeroStat({ icon, value, unit, label, color }: { icon: string; value: string; unit: string; label: string; color: string }) {
   return (
     <View>
-      <Text style={{ fontSize: 9, fontWeight: '700', color: C.muted, letterSpacing: 1.5, marginBottom: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 9, fontWeight: '700', color: C.sub, letterSpacing: 1.5, marginBottom: 2 }}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
         <Ionicons name={icon as any} size={12} color={color} />
         <Text style={{ fontSize: 22, fontWeight: '800', color }}> {value}</Text>
@@ -306,7 +430,7 @@ function WeekPill({ day, isToday }: { day: WorkoutDay; isToday: boolean }) {
     <View style={{ width: 68, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', marginRight: 8, borderWidth: 1, borderColor: C.border, backgroundColor: '#0C0C0C', gap: 4 }}>
       <Text style={{ fontSize: 10, fontWeight: '700', color: C.sub, letterSpacing: 0.8 }}>{DAY_NAMES[day.dayOfWeek]}</Text>
       {day.isRestDay ? <Ionicons name="moon-outline" size={13} color={C.muted} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.muted }} />}
-      <Text style={{ fontSize: 9, color: C.muted, textAlign: 'center', letterSpacing: 0.5 }} numberOfLines={1}>
+      <Text style={{ fontSize: 9, color: C.sub, textAlign: 'center', letterSpacing: 0.5 }} numberOfLines={1}>
         {day.isRestDay ? 'Riposo' : (day.workout?.type?.toUpperCase() ?? '—')}
       </Text>
     </View>
@@ -364,9 +488,10 @@ const s = StyleSheet.create({
   sep: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
   goalPct: { fontSize: 34, fontWeight: '900', color: C.green, letterSpacing: -1 },
   goalPctSub: { fontSize: 18, fontWeight: '700' },
-  goalTrack: { height: 4, backgroundColor: C.border, borderRadius: 2, overflow: 'hidden', width: '100%' },
+  goalTrack: { height: 4, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 2, overflow: 'hidden', width: '100%' },
   goalFill: { height: '100%', borderRadius: 2 },
-  section: { fontSize: 10, fontWeight: '800', color: C.muted, letterSpacing: 2, paddingHorizontal: 20, marginBottom: 12, marginTop: 8 },
+  section: { fontSize: 10, fontWeight: '800', color: '#666666', letterSpacing: 2, paddingHorizontal: 20, marginBottom: 12, marginTop: 20 },
+  chartCard: { marginHorizontal: 16, marginBottom: 8, backgroundColor: '#0C0C0C', borderRadius: 20, padding: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   vitalsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   workoutCard: { marginHorizontal: 16, marginBottom: 8, borderRadius: 22, padding: 20, borderWidth: 1, borderColor: 'rgba(0,212,160,0.2)' },
   workoutTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
