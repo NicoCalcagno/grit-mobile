@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,7 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, LinearGradient, Stop, RadialGradient, Rect } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   withTiming,
@@ -22,26 +24,48 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { RootStackParamList, WorkoutDay } from '../../types';
-import { colors, spacing, typography, radii } from '../../constants/theme';
+import { colors, spacing, radii } from '../../constants/theme';
 import { useAuthStore } from '../../stores/authStore';
 import { useWorkoutStore } from '../../stores/workoutStore';
 import { useNutritionStore } from '../../stores/nutritionStore';
 import { useHealthKit } from '../../hooks/useHealthKit';
-import GritButton from '../../components/ui/GritButton';
 import InsightCard from '../../components/nutrition/InsightCard';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const { width: SCREEN_W } = Dimensions.get('window');
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
-const RING_R = 68;
-const RING_SIZE = 160;
-const RING_STROKE = 11;
-const RING_CX = RING_SIZE / 2;
-const RING_CY = RING_SIZE / 2;
+const RING_R = 74;
+const RING_SIZE = 172;
+const RING_STROKE = 12;
+const CX = RING_SIZE / 2;
+const CY = RING_SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RING_R;
 const STEPS_GOAL = 10000;
+
+// Palette
+const C = {
+  bg: '#000000',
+  card: '#0C0C0C',
+  border: 'rgba(255,255,255,0.06)',
+  text: '#FFFFFF',
+  sub: '#888888',
+  muted: '#444444',
+  orange: '#FF5722',
+  gold: '#FFB300',
+  cyan: '#00BCD4',
+  purple: '#9C27B0',
+  purpleLight: '#CE93D8',
+  blue: '#1E88E5',
+  blueLight: '#90CAF9',
+  teal: '#00897B',
+  tealLight: '#80CBC4',
+  green: '#43A047',
+  amber: '#FFB300',
+  red: '#EF5350',
+};
 
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
@@ -86,462 +110,442 @@ export default function HomeScreen() {
   const hasBodyMetrics = weightKg > 0 || bodyFatPct > 0 || vo2Max > 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              {getGreeting()},
-            </Text>
-            <Text style={styles.greetingName}>
-              {user?.name?.split(' ')[0] ?? 'Atleta'}
-            </Text>
-            <Text style={styles.date}>
-              {format(today, 'EEEE d MMMM', { locale: it })}
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>
-              {(user?.name?.[0] ?? 'A').toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Activity Hero */}
-        <View style={styles.heroCard}>
-          <Svg style={StyleSheet.absoluteFillObject} width="100%" height="100%">
-            <Defs>
-              <RadialGradient id="bgGlow" cx="35%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor="rgba(255,77,0,0.18)" />
-                <Stop offset="100%" stopColor="rgba(0,0,0,0)" />
-              </RadialGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100%" height="100%" fill="url(#bgGlow)" />
-          </Svg>
-
-          <Text style={styles.heroLabel}>ATTIVITÀ</Text>
-
-          <View style={styles.heroContent}>
-            {/* Animated Ring */}
-            <View style={styles.ringWrapper}>
-              <StepsRing progress={stepsProgress} />
-              <View style={styles.ringInner} pointerEvents="none">
-                <Text style={styles.stepsValue}>
-                  {steps > 0 ? steps.toLocaleString('it-IT') : '—'}
-                </Text>
-                <Text style={styles.stepsUnit}>passi</Text>
-                <Text style={styles.stepsGoal}>
-                  / {STEPS_GOAL.toLocaleString('it-IT')}
-                </Text>
-              </View>
-            </View>
-
-            {/* Side stats */}
-            <View style={styles.heroStats}>
-              <HeroStat
-                label="CALORIE"
-                value={calories > 0 ? `${calories}` : '—'}
-                unit="kcal"
-                color={colors.calories}
-                icon="flame"
-              />
-              <View style={styles.statSep} />
-              <HeroStat
-                label="DISTANZA"
-                value={distanceKm > 0 ? `${distanceKm}` : '—'}
-                unit="km"
-                color={colors.steps}
-                icon="walk"
-              />
-              <View style={styles.statSep} />
-              <View>
-                <Text style={styles.goalPct}>
-                  {Math.round(stepsProgress * 100)}
-                  <Text style={styles.goalPctSign}>%</Text>
-                </Text>
-                <Text style={styles.goalLabel}>obiettivo</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Vitals */}
-        <SectionLabel text="PARAMETRI VITALI" color={colors.heartRate} />
-        <View style={styles.vitalsRow}>
-          <VitalCard
-            label="FC Live"
-            value={heartRate > 0 ? `${heartRate}` : '—'}
-            unit="bpm"
-            color={colors.heartRate}
-            icon="heart"
-          />
-          <VitalCard
-            label="FC Riposo"
-            value={restingHeartRate > 0 ? `${restingHeartRate}` : '—'}
-            unit="bpm"
-            color={colors.info}
-            icon="heart-circle-outline"
-          />
-          <VitalCard
-            label="HRV"
-            value={hrv > 0 ? `${hrv}` : '—'}
-            unit="ms"
-            color={colors.hrv}
-            icon="pulse"
-          />
-        </View>
-
-        {/* Workout */}
-        <SectionLabel text="ALLENAMENTO" color={colors.primary} />
-        <View style={styles.workoutCard}>
-          <View style={styles.workoutCardTop}>
-            <View style={styles.todayBadge}>
-              <Text style={styles.todayBadgeText}>OGGI</Text>
-            </View>
-            {todayPlan?.workout && (
-              <Text style={styles.workoutDuration}>
-                {todayPlan.workout.durationMinutes} min
-              </Text>
-            )}
-          </View>
-
-          {todayPlan?.isRestDay ? (
-            <View style={styles.restDay}>
-              <Ionicons name="moon" size={32} color={colors.hrv} />
-              <Text style={styles.restTitle}>Giorno di riposo</Text>
-              <Text style={styles.restSub}>Recupera, stira, idratati.</Text>
-            </View>
-          ) : todayPlan?.workout ? (
-            <>
-              <Text style={styles.workoutName}>{todayPlan.workout.name}</Text>
-              <Text style={styles.workoutType}>
-                {todayPlan.workout.type.toUpperCase()}
-              </Text>
-              <Text style={styles.exerciseCount}>
-                {todayPlan.workout.exercises.length} esercizi
-              </Text>
-              <GritButton
-                label="Inizia allenamento"
-                onPress={handleStartWorkout}
-                size="lg"
-                style={styles.startBtn}
-              />
-            </>
-          ) : (
-            <View style={styles.noWorkout}>
-              <Text style={styles.noWorkoutText}>
-                Nessun allenamento per oggi.
-              </Text>
-              <GritButton
-                label="Crea workout"
-                onPress={() => {}}
-                variant="secondary"
-                size="sm"
-              />
-            </View>
-          )}
-        </View>
-
-        {/* Weekly pills */}
-        <SectionLabel text="SETTIMANA" color={colors.accent} />
+    <View style={s.root}>
+      <SafeAreaView style={s.safe}>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.weekScroll}
-          contentContainerStyle={styles.weekContent}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={s.scroll}
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={onRefresh} tintColor={C.orange} />
+          }
         >
-          {weeklyPlan.map((day) => (
-            <WeekPill
-              key={day.dayOfWeek}
-              day={day}
-              isToday={day.dayOfWeek === todayDow}
-            />
-          ))}
-        </ScrollView>
+          {/* ── Header ── */}
+          <LinearGradient
+            colors={['#130800', '#080400', '#000000']}
+            style={s.header}
+          >
+            <View>
+              <Text style={s.hi}>{getGreeting()},</Text>
+              <Text style={s.name}>{user?.name?.split(' ')[0] ?? 'Atleta'}</Text>
+              <Text style={s.date}>
+                {format(today, 'EEEE d MMMM', { locale: it })}
+              </Text>
+            </View>
+            <LinearGradient
+              colors={[C.orange, C.gold]}
+              style={s.avatarGrad}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={s.avatarInner}>
+                <Text style={s.avatarTxt}>
+                  {(user?.name?.[0] ?? 'A').toUpperCase()}
+                </Text>
+              </View>
+            </LinearGradient>
+          </LinearGradient>
 
-        {/* Body metrics */}
-        {hasBodyMetrics && (
-          <>
-            <SectionLabel text="COMPOSIZIONE" color={colors.vo2} />
-            <View style={styles.bodyRow}>
-              {weightKg > 0 && (
-                <BodyCard label="Peso" value={`${weightKg}`} unit="kg" color={colors.accent} />
-              )}
-              {bodyFatPct > 0 && (
-                <BodyCard label="Grasso" value={`${bodyFatPct}`} unit="%" color={colors.warning} />
-              )}
-              {vo2Max > 0 && (
-                <BodyCard label="VO₂max" value={`${vo2Max}`} unit="ml/kg" color={colors.vo2} />
+          {/* ── Activity Hero ── */}
+          <LinearGradient
+            colors={[C.orange, C.gold, 'rgba(255,87,34,0.4)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.heroBorder}
+          >
+            <LinearGradient
+              colors={['#1A0800', '#110500', '#0A0A0A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={s.heroCard}
+            >
+              <Text style={s.cardLabel}>ATTIVITÀ DI OGGI</Text>
+              <View style={s.heroRow}>
+                {/* Animated Ring */}
+                <View style={s.ringWrap}>
+                  <StepsRing progress={stepsProgress} />
+                  <View style={s.ringInner}>
+                    <Text style={s.stepsNum}>
+                      {steps > 0 ? steps.toLocaleString('it-IT') : '—'}
+                    </Text>
+                    <Text style={s.stepsLbl}>passi</Text>
+                    <Text style={s.stepsGoal}>/ {STEPS_GOAL.toLocaleString('it-IT')}</Text>
+                  </View>
+                </View>
+
+                {/* Side stats */}
+                <View style={s.heroSide}>
+                  <HeroStat
+                    icon="flame"
+                    value={calories > 0 ? `${calories}` : '—'}
+                    unit="kcal"
+                    label="CALORIE"
+                    color={C.gold}
+                  />
+                  <View style={s.sep} />
+                  <HeroStat
+                    icon="footsteps"
+                    value={distanceKm > 0 ? `${distanceKm}` : '—'}
+                    unit="km"
+                    label="DISTANZA"
+                    color={C.cyan}
+                  />
+                  <View style={s.sep} />
+                  <View>
+                    <Text style={s.goalPct}>
+                      {Math.round(stepsProgress * 100)}
+                      <Text style={s.goalPctSub}>%</Text>
+                    </Text>
+                    <Text style={[s.cardLabel, { marginBottom: 6 }]}>OBIETTIVO</Text>
+                    <View style={s.goalTrack}>
+                      <LinearGradient
+                        colors={[C.orange, C.gold]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[s.goalFill, { width: `${Math.round(stepsProgress * 100)}%` as any }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+          </LinearGradient>
+
+          {/* ── Vitals ── */}
+          <Text style={s.section}>PARAMETRI VITALI</Text>
+          <View style={s.vitalsRow}>
+            <GradCard
+              grad={['rgba(255,87,34,0.22)', 'rgba(255,87,34,0.05)', '#0C0C0C']}
+              borderColor={C.orange}
+            >
+              <Ionicons name="heart" size={20} color={C.orange} />
+              <Text style={[s.vitalVal, { color: C.orange }]}>
+                {heartRate > 0 ? heartRate : '—'}
+              </Text>
+              <Text style={s.vitalUnit}>bpm</Text>
+              <Text style={s.vitalLbl}>FC Live</Text>
+            </GradCard>
+
+            <GradCard
+              grad={['rgba(30,136,229,0.22)', 'rgba(30,136,229,0.05)', '#0C0C0C']}
+              borderColor={C.blue}
+            >
+              <Ionicons name="heart-circle-outline" size={20} color={C.blueLight} />
+              <Text style={[s.vitalVal, { color: C.blueLight }]}>
+                {restingHeartRate > 0 ? restingHeartRate : '—'}
+              </Text>
+              <Text style={s.vitalUnit}>bpm</Text>
+              <Text style={s.vitalLbl}>FC Riposo</Text>
+            </GradCard>
+
+            <GradCard
+              grad={['rgba(156,39,176,0.22)', 'rgba(156,39,176,0.05)', '#0C0C0C']}
+              borderColor={C.purple}
+            >
+              <Ionicons name="pulse" size={20} color={C.purpleLight} />
+              <Text style={[s.vitalVal, { color: C.purpleLight }]}>
+                {hrv > 0 ? hrv : '—'}
+              </Text>
+              <Text style={s.vitalUnit}>ms</Text>
+              <Text style={s.vitalLbl}>HRV</Text>
+            </GradCard>
+          </View>
+
+          {/* ── Workout ── */}
+          <Text style={s.section}>ALLENAMENTO</Text>
+          <LinearGradient
+            colors={['#001F1A', '#002920', '#0A0A0A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={s.workoutCard}
+          >
+            <View style={s.workoutTop}>
+              <LinearGradient
+                colors={[C.orange, C.gold]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={s.badge}
+              >
+                <Text style={s.badgeTxt}>OGGI</Text>
+              </LinearGradient>
+              {todayPlan?.workout && (
+                <Text style={s.dur}>{todayPlan.workout.durationMinutes} min</Text>
               )}
             </View>
-          </>
-        )}
 
-        {/* Nutrition */}
-        <SectionLabel text="NUTRIZIONE" color={colors.protein} />
-        <View style={styles.nutrRow}>
-          <NutrCard label="kcal" value={`${summary?.totalCalories ?? 0}`} color={colors.calories} />
-          <NutrCard label="prot" value={`${Math.round((summary as any)?.totalProtein ?? 0)}g`} color={colors.protein} />
-          <NutrCard label="carbo" value={`${Math.round((summary as any)?.totalCarbs ?? 0)}g`} color={colors.carbs} />
-          <NutrCard label="grassi" value={`${Math.round((summary as any)?.totalFat ?? 0)}g`} color={colors.fat} />
-        </View>
+            {todayPlan?.isRestDay ? (
+              <View style={s.rest}>
+                <Ionicons name="moon" size={36} color={C.purpleLight} />
+                <Text style={s.restTitle}>Giorno di riposo</Text>
+                <Text style={s.restSub}>Recupera, stira, idratati.</Text>
+              </View>
+            ) : todayPlan?.workout ? (
+              <>
+                <Text style={s.wName}>{todayPlan.workout.name}</Text>
+                <Text style={s.wType}>{todayPlan.workout.type.toUpperCase()}</Text>
+                <Text style={s.wEx}>{todayPlan.workout.exercises.length} esercizi</Text>
+                <GradientButton label="Inizia allenamento" onPress={handleStartWorkout} />
+              </>
+            ) : (
+              <View style={s.noW}>
+                <Text style={s.noWTxt}>Nessun allenamento per oggi.</Text>
+                <GradientButton label="Crea workout" onPress={() => {}} small />
+              </View>
+            )}
+          </LinearGradient>
 
-        {/* Insights */}
-        {unreadInsights.length > 0 && (
-          <>
-            <SectionLabel text="INSIGHTS" color={colors.info} />
-            {unreadInsights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
+          {/* ── Week ── */}
+          <Text style={s.section}>SETTIMANA</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={s.weekWrap}
+          >
+            {weeklyPlan.map((day) => (
+              <WeekPill key={day.dayOfWeek} day={day} isToday={day.dayOfWeek === todayDow} />
             ))}
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          </ScrollView>
+
+          {/* ── Body Metrics ── */}
+          {hasBodyMetrics && (
+            <>
+              <Text style={s.section}>COMPOSIZIONE CORPOREA</Text>
+              <View style={s.bodyRow}>
+                {weightKg > 0 && (
+                  <BodyCard label="Peso" value={`${weightKg}`} unit="kg" color={C.gold} grad={['rgba(255,179,0,0.18)', '#0C0C0C']} />
+                )}
+                {bodyFatPct > 0 && (
+                  <BodyCard label="Grasso" value={`${bodyFatPct}`} unit="%" color={C.amber} grad={['rgba(255,152,0,0.18)', '#0C0C0C']} />
+                )}
+                {vo2Max > 0 && (
+                  <BodyCard label="VO₂max" value={`${vo2Max}`} unit="ml/kg" color={C.tealLight} grad={['rgba(0,137,123,0.18)', '#0C0C0C']} />
+                )}
+              </View>
+            </>
+          )}
+
+          {/* ── Nutrition ── */}
+          <Text style={s.section}>NUTRIZIONE</Text>
+          <View style={s.nutrRow}>
+            <NutrCard label="kcal" value={`${summary?.totalCalories ?? 0}`} color={C.gold} />
+            <NutrCard label="prot" value={`${Math.round((summary as any)?.totalProtein ?? 0)}g`} color={C.green} />
+            <NutrCard label="carbo" value={`${Math.round((summary as any)?.totalCarbs ?? 0)}g`} color={C.blue} />
+            <NutrCard label="grassi" value={`${Math.round((summary as any)?.totalFat ?? 0)}g`} color={C.amber} />
+          </View>
+
+          {unreadInsights.length > 0 && (
+            <>
+              <Text style={s.section}>INSIGHTS</Text>
+              {unreadInsights.map((insight) => (
+                <InsightCard key={insight.id} insight={insight} />
+              ))}
+            </>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── StepsRing ─────────────────────────────────────────────────────────────────
 
 function StepsRing({ progress }: { progress: number }) {
   const offset = useSharedValue(CIRCUMFERENCE);
-
   useEffect(() => {
     offset.value = withTiming(CIRCUMFERENCE * (1 - progress), {
-      duration: 1400,
+      duration: 1600,
       easing: Easing.out(Easing.cubic),
     });
   }, [progress]);
-
-  const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: offset.value,
-  }));
+  const aProps = useAnimatedProps(() => ({ strokeDashoffset: offset.value }));
 
   return (
     <Svg width={RING_SIZE} height={RING_SIZE}>
       <Defs>
-        <LinearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <Stop offset="0%" stopColor="#FF4D00" />
-          <Stop offset="60%" stopColor="#FF8C00" />
-          <Stop offset="100%" stopColor="#FFD700" />
-        </LinearGradient>
+        <SvgLinearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor={C.orange} />
+          <Stop offset="50%" stopColor="#FF8C00" />
+          <Stop offset="100%" stopColor={C.gold} />
+        </SvgLinearGradient>
       </Defs>
-      {/* Track */}
-      <Circle
-        cx={RING_CX}
-        cy={RING_CY}
-        r={RING_R}
-        stroke="rgba(255,255,255,0.07)"
-        strokeWidth={RING_STROKE}
-        fill="none"
-      />
-      {/* Glow ring (blurred duplicate) */}
-      <Circle
-        cx={RING_CX}
-        cy={RING_CY}
-        r={RING_R}
-        stroke="rgba(255,77,0,0.2)"
-        strokeWidth={RING_STROKE + 8}
-        fill="none"
-        strokeDasharray={CIRCUMFERENCE}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${RING_CX} ${RING_CY})`}
-      />
-      {/* Progress arc */}
-      <AnimatedCircle
-        cx={RING_CX}
-        cy={RING_CY}
-        r={RING_R}
-        stroke="url(#ringGrad)"
-        strokeWidth={RING_STROKE}
-        fill="none"
-        strokeDasharray={CIRCUMFERENCE}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${RING_CX} ${RING_CY})`}
-        animatedProps={animatedProps}
-      />
+      {/* outer glow ring */}
+      <Circle cx={CX} cy={CY} r={RING_R} stroke="rgba(255,87,34,0.15)" strokeWidth={RING_STROKE + 10} fill="none" />
+      {/* track */}
+      <Circle cx={CX} cy={CY} r={RING_R} stroke="rgba(255,255,255,0.06)" strokeWidth={RING_STROKE} fill="none" />
+      {/* progress */}
+      {progress > 0 && (
+        <AnimatedCircle
+          cx={CX} cy={CY} r={RING_R}
+          stroke="url(#rg)"
+          strokeWidth={RING_STROKE}
+          fill="none"
+          strokeDasharray={CIRCUMFERENCE}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${CX} ${CY})`}
+          animatedProps={aProps}
+        />
+      )}
     </Svg>
   );
 }
 
-function SectionLabel({ text, color }: { text: string; color: string }) {
-  return (
-    <View style={sectionStyles.row}>
-      <View style={[sectionStyles.bar, { backgroundColor: color }]} />
-      <Text style={sectionStyles.label}>{text}</Text>
-    </View>
-  );
-}
+// ── HeroStat ──────────────────────────────────────────────────────────────────
 
-const sectionStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, marginTop: spacing.sm },
-  bar: { width: 3, height: 14, borderRadius: 2, marginRight: spacing.sm },
-  label: { fontSize: 11, fontWeight: '700', color: colors.textMuted, letterSpacing: 1.8 },
-});
-
-function HeroStat({
-  label, value, unit, color, icon,
-}: { label: string; value: string; unit: string; color: string; icon: string }) {
+function HeroStat({ icon, value, unit, label, color }: {
+  icon: string; value: string; unit: string; label: string; color: string;
+}) {
   return (
-    <View style={heroStatStyles.wrap}>
-      <Text style={heroStatStyles.label}>{label}</Text>
-      <View style={heroStatStyles.row}>
-        <Ionicons name={icon as any} size={13} color={color} style={{ marginRight: 3 }} />
-        <Text style={[heroStatStyles.value, { color }]}>{value}</Text>
-        <Text style={heroStatStyles.unit}> {unit}</Text>
+    <View>
+      <Text style={[hs.lbl]}>{label}</Text>
+      <View style={hs.row}>
+        <Ionicons name={icon as any} size={12} color={color} />
+        <Text style={[hs.val, { color }]}> {value}</Text>
+        <Text style={hs.unit}> {unit}</Text>
       </View>
     </View>
   );
 }
-
-const heroStatStyles = StyleSheet.create({
-  wrap: { gap: 2 },
-  label: { fontSize: 9, fontWeight: '700', color: colors.textMuted, letterSpacing: 1.5 },
+const hs = StyleSheet.create({
+  lbl: { fontSize: 9, fontWeight: '700', color: C.muted, letterSpacing: 1.5, marginBottom: 2 },
   row: { flexDirection: 'row', alignItems: 'baseline' },
-  value: { fontSize: 20, fontWeight: '800' },
-  unit: { fontSize: 11, color: colors.textMuted },
+  val: { fontSize: 22, fontWeight: '800' },
+  unit: { fontSize: 11, color: C.sub },
 });
 
-function VitalCard({
-  label, value, unit, color, icon,
-}: { label: string; value: string; unit: string; color: string; icon: string }) {
+// ── GradCard ──────────────────────────────────────────────────────────────────
+
+function GradCard({ grad, borderColor, children }: {
+  grad: readonly [string, string, ...string[]]; borderColor: string; children: React.ReactNode;
+}) {
   return (
-    <View style={[vitalStyles.card, { borderTopColor: color, shadowColor: color }]}>
-      <Ionicons name={icon as any} size={18} color={color} />
-      <Text style={vitalStyles.value}>{value}</Text>
-      <Text style={vitalStyles.unit}>{unit}</Text>
-      <Text style={vitalStyles.label}>{label}</Text>
+    <View style={[gc.wrap, { borderColor, borderWidth: 1 }]}>
+      <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={gc.inner}>
+        {children}
+      </LinearGradient>
     </View>
   );
 }
-
-const vitalStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: '#111',
-    borderRadius: radii.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderTopWidth: 2,
-    gap: spacing.xs,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  value: { fontSize: 26, fontWeight: '800', color: colors.text },
-  unit: { fontSize: 10, color: colors.textMuted },
-  label: { fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
+const gc = StyleSheet.create({
+  wrap: { flex: 1, borderRadius: 16, overflow: 'hidden' },
+  inner: { alignItems: 'center', padding: 14, gap: 4 },
 });
 
-function WeekPill({ day, isToday }: { day: WorkoutDay; isToday: boolean }) {
+// ── GradientButton ────────────────────────────────────────────────────────────
+
+function GradientButton({ label, onPress, small }: {
+  label: string; onPress: () => void; small?: boolean;
+}) {
   return (
-    <View style={[pillStyles.pill, isToday && pillStyles.pillToday]}>
-      <Text style={[pillStyles.day, isToday && pillStyles.dayToday]}>
-        {DAY_NAMES[day.dayOfWeek]}
-      </Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <LinearGradient
+        colors={[C.orange, '#FF8C00', C.gold]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[gb.btn, small && gb.small]}
+      >
+        <Text style={[gb.txt, small && gb.txtSm]}>{label}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+const gb = StyleSheet.create({
+  btn: { borderRadius: 14, paddingVertical: 16, paddingHorizontal: 24, alignItems: 'center' },
+  small: { paddingVertical: 10, paddingHorizontal: 18 },
+  txt: { fontSize: 16, fontWeight: '800', color: '#000', letterSpacing: 0.5 },
+  txtSm: { fontSize: 13 },
+});
+
+// ── WeekPill ──────────────────────────────────────────────────────────────────
+
+function WeekPill({ day, isToday }: { day: WorkoutDay; isToday: boolean }) {
+  if (isToday) {
+    return (
+      <LinearGradient
+        colors={[C.orange, C.gold]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={wp.today}
+      >
+        <Text style={wp.dayToday}>{DAY_NAMES[day.dayOfWeek]}</Text>
+        {day.isRestDay ? (
+          <Ionicons name="moon" size={13} color="#000" />
+        ) : (
+          <View style={wp.dotToday} />
+        )}
+        <Text style={wp.typeToday} numberOfLines={1}>
+          {day.isRestDay ? 'Riposo' : (day.workout?.type?.toUpperCase() ?? '—')}
+        </Text>
+      </LinearGradient>
+    );
+  }
+  return (
+    <View style={wp.pill}>
+      <Text style={wp.day}>{DAY_NAMES[day.dayOfWeek]}</Text>
       {day.isRestDay ? (
-        <Ionicons name="moon-outline" size={13} color={isToday ? colors.primary : colors.textMuted} />
+        <Ionicons name="moon-outline" size={13} color={C.muted} />
       ) : (
-        <View style={[pillStyles.dot, isToday && pillStyles.dotToday]} />
+        <View style={wp.dot} />
       )}
-      <Text style={[pillStyles.type, isToday && pillStyles.typeToday]} numberOfLines={1}>
+      <Text style={wp.type} numberOfLines={1}>
         {day.isRestDay ? 'Riposo' : (day.workout?.type?.toUpperCase() ?? '—')}
       </Text>
     </View>
   );
 }
-
-const pillStyles = StyleSheet.create({
+const wp = StyleSheet.create({
   pill: {
-    width: 70,
-    backgroundColor: '#111',
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-    marginRight: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#222',
-    gap: spacing.xs,
+    width: 68, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8,
+    alignItems: 'center', marginRight: 8, borderWidth: 1, borderColor: C.border,
+    backgroundColor: '#0C0C0C', gap: 4,
   },
-  pillToday: { borderColor: colors.primary, backgroundColor: 'rgba(255,77,0,0.12)' },
-  day: { fontSize: 10, fontWeight: '700', color: colors.textMuted, letterSpacing: 0.8 },
-  dayToday: { color: colors.primary },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#444' },
-  dotToday: { backgroundColor: colors.primary },
-  type: { fontSize: 9, color: colors.textMuted, textAlign: 'center', letterSpacing: 0.5 },
-  typeToday: { color: colors.text },
+  today: { width: 68, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 8, alignItems: 'center', marginRight: 8, gap: 4 },
+  day: { fontSize: 10, fontWeight: '700', color: C.muted, letterSpacing: 0.8 },
+  dayToday: { fontSize: 10, fontWeight: '800', color: '#000', letterSpacing: 0.8 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.muted },
+  dotToday: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#000' },
+  type: { fontSize: 9, color: C.muted, textAlign: 'center', letterSpacing: 0.5 },
+  typeToday: { fontSize: 9, color: '#000', textAlign: 'center', fontWeight: '700', letterSpacing: 0.5 },
 });
 
-function BodyCard({
-  label, value, unit, color,
-}: { label: string; value: string; unit: string; color: string }) {
+// ── BodyCard ──────────────────────────────────────────────────────────────────
+
+function BodyCard({ label, value, unit, color, grad }: {
+  label: string; value: string; unit: string; color: string;
+  grad: readonly [string, string, ...string[]];
+}) {
   return (
-    <View style={[bodyStyles.card, { borderBottomColor: color, shadowColor: color }]}>
-      <Text style={[bodyStyles.value, { color }]}>{value}</Text>
-      <Text style={bodyStyles.unit}>{unit}</Text>
-      <Text style={bodyStyles.label}>{label}</Text>
+    <LinearGradient colors={grad} style={bc.card}>
+      <Text style={[bc.val, { color }]}>{value}</Text>
+      <Text style={bc.unit}>{unit}</Text>
+      <Text style={bc.lbl}>{label}</Text>
+    </LinearGradient>
+  );
+}
+const bc = StyleSheet.create({
+  card: { flex: 1, borderRadius: 14, padding: 16, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: C.border },
+  val: { fontSize: 26, fontWeight: '900' },
+  unit: { fontSize: 10, color: C.sub },
+  lbl: { fontSize: 10, color: C.sub },
+});
+
+// ── NutrCard ──────────────────────────────────────────────────────────────────
+
+function NutrCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View style={[nc.card, { borderTopColor: color }]}>
+      <View style={[nc.dot, { backgroundColor: color }]} />
+      <Text style={[nc.val, { color }]}>{value}</Text>
+      <Text style={nc.lbl}>{label}</Text>
     </View>
   );
 }
-
-const bodyStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: '#111',
-    borderRadius: radii.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    gap: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  value: { fontSize: 24, fontWeight: '800' },
-  unit: { fontSize: 10, color: colors.textMuted },
-  label: { fontSize: 10, color: colors.textSecondary },
+const nc = StyleSheet.create({
+  card: { flex: 1, backgroundColor: '#0C0C0C', borderRadius: 12, padding: 12, alignItems: 'center', borderTopWidth: 2, gap: 3 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  val: { fontSize: 16, fontWeight: '800' },
+  lbl: { fontSize: 9, color: C.sub, letterSpacing: 1, textTransform: 'uppercase' },
 });
 
-function NutrCard({
-  label, value, color,
-}: { label: string; value: string; color: string }) {
-  return (
-    <View style={nutrStyles.card}>
-      <View style={[nutrStyles.dot, { backgroundColor: color }]} />
-      <Text style={[nutrStyles.value, { color }]}>{value}</Text>
-      <Text style={nutrStyles.label}>{label}</Text>
-    </View>
-  );
-}
-
-const nutrStyles = StyleSheet.create({
-  card: {
-    flex: 1,
-    backgroundColor: '#111',
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-    gap: 3,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  value: { fontSize: 17, fontWeight: '800' },
-  label: { fontSize: 9, color: colors.textMuted, letterSpacing: 0.8, textTransform: 'uppercase' },
-});
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -550,149 +554,66 @@ function getGreeting(): string {
   return 'Buonasera';
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#060606' },
-  scroll: { flex: 1 },
-  container: { paddingBottom: spacing.xxl },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  safe: { flex: 1 },
+  scroll: { paddingBottom: 48 },
 
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24,
   },
-  greeting: { fontSize: 13, fontWeight: '400', color: colors.textSecondary },
-  greetingName: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -1 },
-  date: { fontSize: 12, color: colors.textMuted, marginTop: 2, textTransform: 'capitalize' },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,77,0,0.12)',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
+  hi: { fontSize: 13, color: C.sub },
+  name: { fontSize: 32, fontWeight: '900', color: C.text, letterSpacing: -1.5, marginTop: 2 },
+  date: { fontSize: 12, color: C.sub, marginTop: 2, textTransform: 'capitalize' },
+  avatarGrad: { borderRadius: 24, padding: 1.5 },
+  avatarInner: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#0A0A0A', alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: 17, fontWeight: '800', color: colors.primary },
+  avatarTxt: { fontSize: 18, fontWeight: '900', color: C.orange },
 
-  heroCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    backgroundColor: '#0E0E0E',
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,77,0,0.3)',
-    overflow: 'hidden',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  heroLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.primary,
-    letterSpacing: 2,
-    marginBottom: spacing.md,
-  },
-  heroContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  ringWrapper: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: RING_SIZE,
-    height: RING_SIZE,
-  },
-  ringInner: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepsValue: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: colors.text,
-    letterSpacing: -1.5,
-  },
-  stepsUnit: { fontSize: 11, color: colors.textMuted, letterSpacing: 1 },
-  stepsGoal: { fontSize: 9, color: colors.textMuted },
-  heroStats: { flex: 1, gap: spacing.md },
-  statSep: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
-  goalPct: { fontSize: 32, fontWeight: '900', color: colors.primary, letterSpacing: -1 },
-  goalPctSign: { fontSize: 16, fontWeight: '700' },
-  goalLabel: { fontSize: 9, color: colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' },
+  heroBorder: { marginHorizontal: 16, marginBottom: 16, borderRadius: 24, padding: 1.5 },
+  heroCard: { borderRadius: 22, padding: 20 },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: C.orange, letterSpacing: 2, marginBottom: 16 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  ringWrap: { position: 'relative', alignItems: 'center', justifyContent: 'center', width: RING_SIZE, height: RING_SIZE },
+  ringInner: { position: 'absolute', alignItems: 'center' },
+  stepsNum: { fontSize: 38, fontWeight: '900', color: C.text, letterSpacing: -2 },
+  stepsLbl: { fontSize: 11, color: C.sub, letterSpacing: 1 },
+  stepsGoal: { fontSize: 9, color: C.muted },
+  heroSide: { flex: 1, gap: 12 },
+  sep: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
+  goalPct: { fontSize: 34, fontWeight: '900', color: C.orange, letterSpacing: -1 },
+  goalPctSub: { fontSize: 18, fontWeight: '700' },
+  goalTrack: { height: 4, backgroundColor: C.border, borderRadius: 2, overflow: 'hidden', width: '100%' },
+  goalFill: { height: '100%', borderRadius: 2 },
 
-  vitalsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+  section: {
+    fontSize: 10, fontWeight: '800', color: C.muted, letterSpacing: 2,
+    paddingHorizontal: 20, marginBottom: 12, marginTop: 8,
   },
+  vitalsRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
 
-  workoutCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    backgroundColor: '#0E0E0E',
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: '#222',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  workoutCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  todayBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  todayBadgeText: { fontSize: 9, fontWeight: '900', color: '#fff', letterSpacing: 2 },
-  workoutDuration: { fontSize: 12, color: colors.textMuted },
-  workoutName: { fontSize: 24, fontWeight: '800', color: colors.text, letterSpacing: -0.5, marginBottom: spacing.xs },
-  workoutType: { fontSize: 10, fontWeight: '700', color: colors.primary, letterSpacing: 1.5, marginBottom: spacing.xs },
-  exerciseCount: { fontSize: 13, color: colors.textSecondary, marginBottom: spacing.md },
-  startBtn: {},
-  restDay: { alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm },
-  restTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  restSub: { fontSize: 14, color: colors.textSecondary },
-  noWorkout: { alignItems: 'center', gap: spacing.md, paddingVertical: spacing.sm },
-  noWorkoutText: { fontSize: 14, color: colors.textSecondary },
+  workoutCard: { marginHorizontal: 16, marginBottom: 8, borderRadius: 22, padding: 20, borderWidth: 1, borderColor: 'rgba(0,137,123,0.3)' },
+  workoutTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  badge: { borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+  badgeTxt: { fontSize: 9, fontWeight: '900', color: '#000', letterSpacing: 2 },
+  dur: { fontSize: 12, color: C.sub },
+  wName: { fontSize: 26, fontWeight: '900', color: C.text, letterSpacing: -0.5, marginBottom: 6 },
+  wType: { fontSize: 10, fontWeight: '700', color: C.tealLight, letterSpacing: 1.5, marginBottom: 4 },
+  wEx: { fontSize: 13, color: C.sub, marginBottom: 20 },
+  rest: { alignItems: 'center', paddingVertical: 16, gap: 8 },
+  restTitle: { fontSize: 20, fontWeight: '700', color: C.text },
+  restSub: { fontSize: 14, color: C.sub },
+  noW: { alignItems: 'center', gap: 16, paddingVertical: 8 },
+  noWTxt: { fontSize: 14, color: C.sub },
 
-  weekScroll: { marginBottom: spacing.lg },
-  weekContent: { paddingHorizontal: spacing.lg },
+  weekWrap: { paddingHorizontal: 16, paddingBottom: 8 },
+  bodyRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
+  nutrRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
 
-  bodyRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  nutrRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
+  vitalVal: { fontSize: 28, fontWeight: '900' },
+  vitalUnit: { fontSize: 10, color: C.sub },
+  vitalLbl: { fontSize: 10, color: C.sub, textAlign: 'center' },
 });
