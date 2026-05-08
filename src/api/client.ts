@@ -1,7 +1,10 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const BASE_URL = process.env.GRIT_API_URL ?? 'https://grit-backend.railway.app';
+const BASE_URL =
+  (Constants.expoConfig?.extra?.gritApiUrl as string | undefined) ??
+  'https://web-production-af49a.up.railway.app';
 
 const STORAGE_KEYS = {
   ACCESS_TOKEN: '@grit:access_token',
