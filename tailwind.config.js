@@ -5,7 +5,6 @@ module.exports = {
     './index.js',
     './src/**/*.{js,jsx,ts,tsx}',
   ],
-  presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {
@@ -26,9 +25,6 @@ module.exports = {
         card: '#0F0F0F',
         muted: '#444444',
         sub: '#888888',
-      },
-      fontWeight: {
-        black: '900',
       },
     },
   },
