@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Dimensions,
+  RefreshControl, Dimensions, ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -62,7 +62,7 @@ function typeColor(type: string): string {
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { user } = useAuthStore();
-  const { weeklyPlan, fetchWeeklyPlan, setActivePlan, isLoading } = useWorkoutStore();
+  const { weeklyPlan, fetchWeeklyPlan, setActivePlan, generateWeeklyPlan, isLoading } = useWorkoutStore();
   const { summary, insights, fetchSummary, fetchInsights } = useNutritionStore();
   const { heartRate, restingHeartRate, hrv, calories, steps, distanceKm, vo2Max, weightKg, bodyFatPct, refresh: refreshHealth } = useHealthKit();
 
@@ -82,11 +82,18 @@ export default function HomeScreen() {
 
   const todayPlan = weeklyPlan.find((d) => d.dayOfWeek === todayDow);
   const unreadInsights = insights.filter((i) => !i.read).slice(0, 2);
+
   const handleStartWorkout = async () => {
     if (!todayPlan?.workout) return;
     setActivePlan(todayPlan.workout);
     navigation.navigate('WorkoutSession', {});
   };
+
+  const handleGeneratePlan = useCallback(async () => {
+    try {
+      await generateWeeklyPlan();
+    } catch {}
+  }, [generateWeeklyPlan]);
 
   const stepsProgress = Math.min(steps / STEPS_GOAL, 1);
   const hasBodyMetrics = weightKg > 0 || bodyFatPct > 0 || vo2Max > 0;
@@ -198,7 +205,12 @@ export default function HomeScreen() {
               </LinearGradient>
               {todayPlan?.workout && <Text style={s.dur}>{todayPlan.workout.durationMinutes} min</Text>}
             </View>
-            {todayPlan?.isRestDay ? (
+            {isLoading ? (
+              <View style={s.rest}>
+                <ActivityIndicator color={C.green} size="large" />
+                <Text style={s.restSub}>Generazione piano AI...</Text>
+              </View>
+            ) : todayPlan?.isRestDay ? (
               <View style={s.rest}>
                 <Ionicons name="moon" size={36} color={C.purpleLight} />
                 <Text style={s.restTitle}>Giorno di riposo</Text>
@@ -213,8 +225,10 @@ export default function HomeScreen() {
               </>
             ) : (
               <View style={s.noW}>
-                <Text style={s.noWTxt}>Nessun allenamento per oggi.</Text>
-                <GradientButton label="Crea workout" onPress={() => {}} small />
+                <Ionicons name="sparkles-outline" size={32} color={C.green} style={{ marginBottom: 8 }} />
+                <Text style={s.noWTxt}>Nessun piano settimanale</Text>
+                <Text style={{ fontSize: 12, color: C.sub, marginBottom: 16, textAlign: 'center' }}>Genera il tuo piano personalizzato con AI</Text>
+                <GradientButton label="Genera piano AI" onPress={handleGeneratePlan} />
               </View>
             )}
           </LinearGradient>
@@ -222,9 +236,11 @@ export default function HomeScreen() {
           {/* Week */}
           <Text style={s.section}>SETTIMANA</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.weekWrap}>
-            {weeklyPlan.map((day) => (
+            {weeklyPlan.length > 0 ? weeklyPlan.map((day) => (
               <WeekPill key={day.dayOfWeek} day={day} isToday={day.dayOfWeek === todayDow} />
-            ))}
+            )) : (
+              <Text style={{ color: C.muted, fontSize: 13, paddingVertical: 12 }}>Genera prima il piano settimanale</Text>
+            )}
           </ScrollView>
 
           {/* Body */}
@@ -504,8 +520,8 @@ const s = StyleSheet.create({
   rest: { alignItems: 'center', paddingVertical: 16, gap: 8 },
   restTitle: { fontSize: 20, fontWeight: '700', color: C.text },
   restSub: { fontSize: 14, color: C.sub },
-  noW: { alignItems: 'center', gap: 16, paddingVertical: 8 },
-  noWTxt: { fontSize: 14, color: C.sub },
+  noW: { alignItems: 'center', gap: 4, paddingVertical: 8 },
+  noWTxt: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 },
   weekWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   bodyRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },
   nutrRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 8 },

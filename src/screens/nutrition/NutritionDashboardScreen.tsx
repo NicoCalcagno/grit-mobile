@@ -1,12 +1,12 @@
-import React, { useEffect, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 
 import { MealType } from '../../types';
 import { useNutritionStore } from '../../stores/nutritionStore';
@@ -34,8 +34,13 @@ export default function NutritionDashboardScreen() {
   const today = format(new Date(), 'yyyy-MM-dd');
   const todayDow = new Date().getDay();
 
-  const load = useCallback(() => { fetchSummary(today, hkCalories); fetchInsights(); }, [today, hkCalories]);
-  useEffect(() => { load(); }, []);
+  const load = useCallback(() => {
+    fetchSummary(today, hkCalories);
+    fetchInsights();
+  }, [today, hkCalories]);
+
+  // Reload every time this screen comes into focus (catches food logged on other screens)
+  useFocusEffect(useCallback(() => { load(); }, [hkCalories]));
 
   const waterGlasses = summary ? Math.round(summary.water_ml / 250) : 0;
   const unread = insights.filter((i) => !i.read).slice(0, 2);
@@ -53,6 +58,8 @@ export default function NutritionDashboardScreen() {
       target,
     };
   }, [summary?.total_calories, todayDow]);
+
+  const totalMealEntries = MEAL_ORDER.reduce((acc, meal) => acc + (summary?.logs_by_meal?.[meal]?.length ?? 0), 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
@@ -99,7 +106,7 @@ export default function NutritionDashboardScreen() {
             </View>
           )}
 
-          {/* Macro split donut */}
+          {/* Macro donut */}
           {summary && (summary.protein_g + summary.carbs_g + summary.fat_g) > 0 && (
             <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: SURFACE, borderRadius: 24, padding: 20, borderWidth: 1, borderColor: BORDER }}>
               <Text style={{ fontSize: 10, fontWeight: '700', color: GREEN, letterSpacing: 2, marginBottom: 20 }}>DISTRIBUZIONE MACRO</Text>
@@ -139,23 +146,46 @@ export default function NutritionDashboardScreen() {
             </View>
           )}
 
-          {summary && MEAL_ORDER.map((meal) => {
+          {/* Meals section header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12, marginTop: 8 }}>
+            <Text style={{ fontSize: 10, fontWeight: '800', color: '#666', letterSpacing: 2, flex: 1 }}>PASTI DI OGGI</Text>
+            {totalMealEntries > 0 && (
+              <Text style={{ fontSize: 11, color: SUB }}>{totalMealEntries} {totalMealEntries === 1 ? 'alimento' : 'alimenti'}</Text>
+            )}
+          </View>
+
+          {summary && totalMealEntries > 0 ? MEAL_ORDER.map((meal) => {
             const entries = summary.logs_by_meal?.[meal] ?? [];
             if (entries.length === 0) return null;
+            const mealKcal = entries.reduce((s, e) => s + (e.calories ?? 0), 0);
             return (
               <View key={meal} style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: SURFACE, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: BORDER }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <Ionicons name={MEAL_ICONS[meal] as any} size={16} color={GREEN} />
-                  <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff', letterSpacing: 0.5 }}>{MEAL_LABELS[meal]}</Text>
-                  <View style={{ flex: 1 }} />
-                  <Text style={{ fontSize: 11, color: SUB }}>{entries.reduce((s, e) => s + (e.calories ?? 0), 0)} kcal</Text>
+                  <LinearGradient colors={[GREEN + '33', GREEN + '11']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={{ width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={MEAL_ICONS[meal] as any} size={16} color={GREEN} />
+                  </LinearGradient>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.3 }}>{MEAL_LABELS[meal]}</Text>
+                    <Text style={{ fontSize: 10, color: SUB }}>{entries.length} {entries.length === 1 ? 'alimento' : 'alimenti'}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 15, fontWeight: '800', color: GREEN }}>{mealKcal}</Text>
+                    <Text style={{ fontSize: 9, color: SUB }}>kcal</Text>
+                  </View>
                 </View>
                 {entries.map((entry) => (
                   <FoodLogItem key={entry.id} entry={entry} onDelete={async (id) => { await deleteFoodLog(id); load(); }} />
                 ))}
               </View>
             );
-          })}
+          }) : (
+            <View style={{ marginHorizontal: 16, backgroundColor: SURFACE, borderRadius: 20, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: BORDER }}>
+              <Ionicons name="restaurant-outline" size={36} color={MUTED} />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff', marginTop: 12, marginBottom: 4 }}>Nessun pasto registrato</Text>
+              <Text style={{ fontSize: 13, color: SUB, textAlign: 'center' }}>Tocca il + per aggiungere{`\n`}quello che hai mangiato</Text>
+            </View>
+          )}
         </ScrollView>
 
         {/* FAB */}
@@ -179,7 +209,6 @@ function WeeklyCaloriesChart({ data, target, todayIdx }: { data: number[]; targe
 
   return (
     <View>
-      {/* Target line label */}
       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <View style={{ width: 16, height: 1, backgroundColor: 'rgba(255,255,255,0.3)' }} />
@@ -187,13 +216,10 @@ function WeeklyCaloriesChart({ data, target, todayIdx }: { data: number[]; targe
         </View>
       </View>
       <View style={{ position: 'relative' }}>
-        {/* Target dashed line */}
         <View style={{
-          position: 'absolute',
-          left: 0, right: 0,
+          position: 'absolute', left: 0, right: 0,
           top: CHART_H - (target / maxVal) * CHART_H,
-          height: 1,
-          backgroundColor: 'rgba(255,255,255,0.15)',
+          height: 1, backgroundColor: 'rgba(255,255,255,0.15)',
         }} />
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: CHART_H, gap: 6, marginBottom: 8 }}>
           {data.map((val, i) => {
@@ -207,9 +233,7 @@ function WeeklyCaloriesChart({ data, target, todayIdx }: { data: number[]; targe
                 <LinearGradient
                   colors={isFuture || val === 0
                     ? ['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.03)']
-                    : isToday
-                      ? [barColor, barColor + 'BB']
-                      : [barColor + '55', barColor + '22']}
+                    : isToday ? [barColor, barColor + 'BB'] : [barColor + '55', barColor + '22']}
                   start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
                   style={{ height: h, width: '80%', borderRadius: 4, borderTopLeftRadius: 5, borderTopRightRadius: 5 }}
                 />
@@ -254,13 +278,10 @@ function MacroDonut({ protein, carbs, fat }: { protein: number; carbs: number; f
       <View style={{ alignItems: 'center', justifyContent: 'center' }}>
         <Svg width={SIZE} height={SIZE} style={{ transform: [{ rotate: '-90deg' }] }}>
           <Circle cx={CX_D} cy={CY_D} r={R} stroke="rgba(255,255,255,0.06)" strokeWidth={STROKE} fill="none" />
-          {/* Protein */}
           <Circle cx={CX_D} cy={CY_D} r={R} stroke="#EF5350" strokeWidth={STROKE} fill="none"
             strokeDasharray={`${pDash} ${CIRC}`} strokeDashoffset={0} strokeLinecap="butt" />
-          {/* Carbs */}
           <Circle cx={CX_D} cy={CY_D} r={R} stroke="#FFB300" strokeWidth={STROKE} fill="none"
             strokeDasharray={`${cDash} ${CIRC}`} strokeDashoffset={-pDash} strokeLinecap="butt" />
-          {/* Fat */}
           <Circle cx={CX_D} cy={CY_D} r={R} stroke={TEAL} strokeWidth={STROKE} fill="none"
             strokeDasharray={`${fDash} ${CIRC}`} strokeDashoffset={-(pDash + cDash)} strokeLinecap="butt" />
         </Svg>
