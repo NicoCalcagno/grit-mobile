@@ -3,22 +3,29 @@ import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuthStore } from '../../stores/authStore';
 import { AuthStackParamList } from '../../types';
-import { colors, spacing, typography, radii } from '../../constants/theme';
-import GritButton from '../../components/ui/GritButton';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+
+const ORANGE = '#FF5722';
+const GOLD = '#FFB300';
+const SURFACE = '#0C0C0C';
+const SUB = '#666666';
+const BORDER = 'rgba(255,255,255,0.07)';
+const BORDER_FOCUS = 'rgba(255,87,34,0.6)';
 
 export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
@@ -26,152 +33,186 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [focused, setFocused] = useState<string | null>(null);
 
   const handleLogin = async () => {
     clearError();
     try {
       await login({ email: email.trim(), password });
-    } catch {
-      // Error shown via store state
-    }
+    } catch {}
   };
 
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !isLoading;
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <Text style={styles.logo}>GRIT</Text>
-            <Text style={styles.tagline}>Il tuo personal trainer AI</Text>
-          </View>
-
-          <View style={styles.form}>
-            <Text style={styles.title}>Accedi</Text>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="tu@email.com"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
-              />
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 48 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* ── Logo ── */}
+            <View style={{ alignItems: 'center', paddingTop: 64, paddingBottom: 56 }}>
+              <LinearGradient
+                colors={[ORANGE, '#FF8C00', GOLD]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ borderRadius: 12, padding: 1.5 }}
+              >
+                <View style={{ backgroundColor: '#050505', borderRadius: 11, paddingHorizontal: 28, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: 12 }}>
+                    GRIT
+                  </Text>
+                </View>
+              </LinearGradient>
+              <Text style={{ fontSize: 11, color: SUB, letterSpacing: 3, marginTop: 16, textTransform: 'uppercase' }}>
+                Il tuo personal trainer AI
+              </Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor={colors.textMuted}
-                secureTextEntry
-                returnKeyType="done"
-                onSubmitEditing={handleLogin}
-              />
+            {/* ── Form card ── */}
+            <View style={{ backgroundColor: SURFACE, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: BORDER }}>
+              <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 6, letterSpacing: -0.5 }}>
+                Accedi
+              </Text>
+              <Text style={{ fontSize: 14, color: SUB, marginBottom: 28 }}>
+                Bentornato. Pronti a sudare?
+              </Text>
+
+              {error ? (
+                <View style={{
+                  backgroundColor: 'rgba(239,83,80,0.1)',
+                  borderRadius: 10,
+                  padding: 12,
+                  marginBottom: 20,
+                  borderWidth: 1,
+                  borderColor: 'rgba(239,83,80,0.25)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <Ionicons name="alert-circle-outline" size={16} color="#EF5350" />
+                  <Text style={{ color: '#EF5350', fontSize: 13, flex: 1 }}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Email */}
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{
+                  fontSize: 10, fontWeight: '700', color: SUB,
+                  letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase',
+                }}>
+                  Email
+                </Text>
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: '#0A0A0A',
+                  borderRadius: 14, borderWidth: 1,
+                  borderColor: focused === 'email' ? BORDER_FOCUS : BORDER,
+                  paddingHorizontal: 16,
+                  shadowColor: focused === 'email' ? ORANGE : 'transparent',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.3, shadowRadius: 8,
+                }}>
+                  <Ionicons
+                    name="mail-outline" size={18}
+                    color={focused === 'email' ? ORANGE : '#333'}
+                  />
+                  <TextInput
+                    style={{ flex: 1, color: '#fff', fontSize: 16, paddingVertical: 16, paddingHorizontal: 12 }}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="tu@email.com"
+                    placeholderTextColor="#333"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType="next"
+                    onFocus={() => setFocused('email')}
+                    onBlur={() => setFocused(null)}
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View style={{ marginBottom: 32 }}>
+                <Text style={{
+                  fontSize: 10, fontWeight: '700', color: SUB,
+                  letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase',
+                }}>
+                  Password
+                </Text>
+                <View style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: '#0A0A0A',
+                  borderRadius: 14, borderWidth: 1,
+                  borderColor: focused === 'password' ? BORDER_FOCUS : BORDER,
+                  paddingHorizontal: 16,
+                  shadowColor: focused === 'password' ? ORANGE : 'transparent',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.3, shadowRadius: 8,
+                }}>
+                  <Ionicons
+                    name="lock-closed-outline" size={18}
+                    color={focused === 'password' ? ORANGE : '#333'}
+                  />
+                  <TextInput
+                    style={{ flex: 1, color: '#fff', fontSize: 16, paddingVertical: 16, paddingHorizontal: 12 }}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="••••••••"
+                    placeholderTextColor="#333"
+                    secureTextEntry
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                    onFocus={() => setFocused('password')}
+                    onBlur={() => setFocused(null)}
+                  />
+                </View>
+              </View>
+
+              {/* CTA */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                disabled={!canSubmit}
+                activeOpacity={0.85}
+                style={{ opacity: canSubmit ? 1 : 0.45 }}
+              >
+                <LinearGradient
+                  colors={[ORANGE, '#FF8C00', GOLD]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{ borderRadius: 16, paddingVertical: 18, alignItems: 'center' }}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#000" size="small" />
+                  ) : (
+                    <Text style={{ fontSize: 15, fontWeight: '900', color: '#000', letterSpacing: 2 }}>
+                      ACCEDI
+                    </Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
 
-            <GritButton
-              label="Accedi"
-              onPress={handleLogin}
-              loading={isLoading}
-              disabled={!email || !password}
-              size="lg"
-              style={styles.cta}
-            />
-
-            <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.switchLink}>
-              <Text style={styles.switchText}>
-                Non hai un account? <Text style={styles.switchHighlight}>Registrati</Text>
+            {/* Switch */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Register')}
+              style={{ alignItems: 'center', marginTop: 28, paddingVertical: 8 }}
+            >
+              <Text style={{ fontSize: 14, color: SUB }}>
+                Non hai un account?{' '}
+                <Text style={{ color: ORANGE, fontWeight: '700' }}>Registrati</Text>
               </Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  flex: { flex: 1 },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xl,
-  },
-  logo: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 8,
-  },
-  tagline: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  form: {
-    flex: 1,
-  },
-  title: {
-    ...typography.heading2,
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  error: {
-    color: colors.error,
-    ...typography.bodySmall,
-    marginBottom: spacing.md,
-    backgroundColor: 'rgba(244, 67, 54, 0.1)',
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-  },
-  inputGroup: {
-    marginBottom: spacing.md,
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 4,
-    color: colors.text,
-    fontSize: 16,
-  },
-  cta: { marginTop: spacing.lg },
-  switchLink: {
-    alignItems: 'center',
-    marginTop: spacing.lg,
-  },
-  switchText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  switchHighlight: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});

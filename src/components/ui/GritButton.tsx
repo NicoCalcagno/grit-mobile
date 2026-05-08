@@ -3,11 +3,14 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  StyleSheet,
   ViewStyle,
   TextStyle,
+  View,
 } from 'react-native';
-import { colors, radii, typography, spacing } from '../../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const ORANGE = '#FF5722';
+const GOLD = '#FFB300';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -23,6 +26,28 @@ interface Props {
   textStyle?: TextStyle;
 }
 
+const SIZE_PY: Record<Size, number> = { sm: 10, md: 14, lg: 18 };
+const SIZE_PX: Record<Size, number> = { sm: 16, md: 24, lg: 28 };
+const SIZE_FS: Record<Size, number> = { sm: 13, md: 15, lg: 16 };
+const SIZE_H: Record<Size, number>  = { sm: 36, md: 48, lg: 56 };
+
+const VARIANT_BG: Record<Exclude<Variant, 'primary'>, string> = {
+  secondary: 'rgba(255,255,255,0.06)',
+  ghost: 'transparent',
+  danger: '#EF5350',
+};
+const VARIANT_BORDER: Record<Exclude<Variant, 'primary'>, string> = {
+  secondary: 'rgba(255,255,255,0.12)',
+  ghost: 'transparent',
+  danger: 'transparent',
+};
+const VARIANT_COLOR: Record<Variant, string> = {
+  primary: '#000',
+  secondary: '#fff',
+  ghost: ORANGE,
+  danger: '#fff',
+};
+
 export default function GritButton({
   label,
   onPress,
@@ -33,78 +58,69 @@ export default function GritButton({
   style,
   textStyle,
 }: Props) {
-  const containerStyle = [
-    styles.base,
-    styles[variant],
-    styles[`size_${size}`],
-    (disabled || loading) && styles.disabled,
-    style,
-  ];
+  const isDisabled = disabled || loading;
+  const py = SIZE_PY[size];
+  const px = SIZE_PX[size];
+  const fs = SIZE_FS[size];
+  const minH = SIZE_H[size];
+
+  const inner = loading ? (
+    <ActivityIndicator color={VARIANT_COLOR[variant]} size="small" />
+  ) : (
+    <Text style={[
+      { fontSize: fs, fontWeight: '800', color: VARIANT_COLOR[variant], letterSpacing: 0.5 },
+      textStyle,
+    ]}>
+      {label}
+    </Text>
+  );
+
+  if (variant === 'primary') {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={isDisabled}
+        activeOpacity={0.85}
+        style={[{ opacity: isDisabled ? 0.45 : 1 }, style]}
+      >
+        <LinearGradient
+          colors={[ORANGE, '#FF8C00', GOLD]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            borderRadius: 14,
+            paddingVertical: py,
+            paddingHorizontal: px,
+            minHeight: minH,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {inner}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
-      style={containerStyle}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       activeOpacity={0.8}
+      style={[{
+        backgroundColor: VARIANT_BG[variant as Exclude<Variant, 'primary'>],
+        borderRadius: 14,
+        paddingVertical: py,
+        paddingHorizontal: px,
+        minHeight: minH,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: variant === 'secondary' ? 1 : 0,
+        borderColor: VARIANT_BORDER[variant as Exclude<Variant, 'primary'>],
+        opacity: isDisabled ? 0.45 : 1,
+      }, style]}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.white : colors.primary} size="small" />
-      ) : (
-        <Text style={[styles.label, styles[`label_${variant}`], styles[`labelSize_${size}`], textStyle]}>
-          {label}
-        </Text>
-      )}
+      {inner}
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
-  },
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  secondary: {
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  ghost: {
-    backgroundColor: colors.transparent,
-  },
-  danger: {
-    backgroundColor: colors.error,
-  },
-  disabled: {
-    opacity: 0.4,
-  },
-  size_sm: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    minHeight: 36,
-  },
-  size_md: {
-    paddingVertical: spacing.sm + 4,
-    paddingHorizontal: spacing.lg,
-    minHeight: 48,
-  },
-  size_lg: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    minHeight: 56,
-  },
-  label: {
-    fontWeight: '600',
-  },
-  label_primary: { color: colors.white },
-  label_secondary: { color: colors.text },
-  label_ghost: { color: colors.primary },
-  label_danger: { color: colors.white },
-  labelSize_sm: { fontSize: 14 },
-  labelSize_md: { fontSize: 16 },
-  labelSize_lg: { fontSize: 18 },
-});
