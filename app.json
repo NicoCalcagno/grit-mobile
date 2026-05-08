@@ -9,6 +9,10 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.grit.mobile",
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true
+      },
       "infoPlist": {
         "NSHealthShareUsageDescription": "Grit reads your heart rate, calories and fitness data to power AI coaching.",
         "NSHealthUpdateUsageDescription": "Grit saves completed workouts to HealthKit.",
