@@ -20,12 +20,12 @@ import { AuthStackParamList } from '../../types';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
-const ORANGE = '#FF5722';
-const GOLD = '#FFB300';
+const GREEN = '#00FF87';
+const TEAL = '#00D4A0';
 const SURFACE = '#0C0C0C';
-const SUB = '#666666';
-const BORDER = 'rgba(255,255,255,0.07)';
-const BORDER_FOCUS = 'rgba(255,87,34,0.6)';
+const SUB = '#555555';
+const BORDER = 'rgba(255,255,255,0.06)';
+const BORDER_FOCUS = 'rgba(0,255,135,0.5)';
 
 export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
@@ -59,7 +59,7 @@ export default function LoginScreen() {
             {/* ── Logo ── */}
             <View style={{ alignItems: 'center', paddingTop: 64, paddingBottom: 56 }}>
               <LinearGradient
-                colors={[ORANGE, '#FF8C00', GOLD]}
+                colors={[GREEN, TEAL]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{ borderRadius: 12, padding: 1.5 }}
@@ -75,7 +75,7 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            {/* ── Form card ── */}
+            {/* ── Form ── */}
             <View style={{ backgroundColor: SURFACE, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: BORDER }}>
               <Text style={{ fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 6, letterSpacing: -0.5 }}>
                 Accedi
@@ -86,15 +86,9 @@ export default function LoginScreen() {
 
               {error ? (
                 <View style={{
-                  backgroundColor: 'rgba(239,83,80,0.1)',
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 20,
-                  borderWidth: 1,
-                  borderColor: 'rgba(239,83,80,0.25)',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
+                  backgroundColor: 'rgba(239,83,80,0.1)', borderRadius: 10,
+                  padding: 12, marginBottom: 20, borderWidth: 1,
+                  borderColor: 'rgba(239,83,80,0.25)', flexDirection: 'row', alignItems: 'center', gap: 8,
                 }}>
                   <Ionicons name="alert-circle-outline" size={16} color="#EF5350" />
                   <Text style={{ color: '#EF5350', fontSize: 13, flex: 1 }}>{error}</Text>
@@ -103,111 +97,73 @@ export default function LoginScreen() {
 
               {/* Email */}
               <View style={{ marginBottom: 16 }}>
-                <Text style={{
-                  fontSize: 10, fontWeight: '700', color: SUB,
-                  letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase',
-                }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: SUB, letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase' }}>
                   Email
                 </Text>
                 <View style={{
                   flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: '#0A0A0A',
-                  borderRadius: 14, borderWidth: 1,
+                  backgroundColor: '#0A0A0A', borderRadius: 14, borderWidth: 1,
                   borderColor: focused === 'email' ? BORDER_FOCUS : BORDER,
                   paddingHorizontal: 16,
-                  shadowColor: focused === 'email' ? ORANGE : 'transparent',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.3, shadowRadius: 8,
+                  shadowColor: focused === 'email' ? GREEN : 'transparent',
+                  shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
                 }}>
-                  <Ionicons
-                    name="mail-outline" size={18}
-                    color={focused === 'email' ? ORANGE : '#333'}
-                  />
+                  <Ionicons name="mail-outline" size={18} color={focused === 'email' ? GREEN : '#333'} />
                   <TextInput
                     style={{ flex: 1, color: '#fff', fontSize: 16, paddingVertical: 16, paddingHorizontal: 12 }}
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="tu@email.com"
-                    placeholderTextColor="#333"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
+                    value={email} onChangeText={setEmail}
+                    placeholder="tu@email.com" placeholderTextColor="#2a2a2a"
+                    keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                     returnKeyType="next"
-                    onFocus={() => setFocused('email')}
-                    onBlur={() => setFocused(null)}
+                    onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
                   />
                 </View>
               </View>
 
               {/* Password */}
               <View style={{ marginBottom: 32 }}>
-                <Text style={{
-                  fontSize: 10, fontWeight: '700', color: SUB,
-                  letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase',
-                }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: SUB, letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase' }}>
                   Password
                 </Text>
                 <View style={{
                   flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: '#0A0A0A',
-                  borderRadius: 14, borderWidth: 1,
+                  backgroundColor: '#0A0A0A', borderRadius: 14, borderWidth: 1,
                   borderColor: focused === 'password' ? BORDER_FOCUS : BORDER,
                   paddingHorizontal: 16,
-                  shadowColor: focused === 'password' ? ORANGE : 'transparent',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: 0.3, shadowRadius: 8,
+                  shadowColor: focused === 'password' ? GREEN : 'transparent',
+                  shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
                 }}>
-                  <Ionicons
-                    name="lock-closed-outline" size={18}
-                    color={focused === 'password' ? ORANGE : '#333'}
-                  />
+                  <Ionicons name="lock-closed-outline" size={18} color={focused === 'password' ? GREEN : '#333'} />
                   <TextInput
                     style={{ flex: 1, color: '#fff', fontSize: 16, paddingVertical: 16, paddingHorizontal: 12 }}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="••••••••"
-                    placeholderTextColor="#333"
-                    secureTextEntry
-                    returnKeyType="done"
+                    value={password} onChangeText={setPassword}
+                    placeholder="••••••••" placeholderTextColor="#2a2a2a"
+                    secureTextEntry returnKeyType="done"
                     onSubmitEditing={handleLogin}
-                    onFocus={() => setFocused('password')}
-                    onBlur={() => setFocused(null)}
+                    onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
                   />
                 </View>
               </View>
 
               {/* CTA */}
-              <TouchableOpacity
-                onPress={handleLogin}
-                disabled={!canSubmit}
-                activeOpacity={0.85}
-                style={{ opacity: canSubmit ? 1 : 0.45 }}
-              >
+              <TouchableOpacity onPress={handleLogin} disabled={!canSubmit} activeOpacity={0.85} style={{ opacity: canSubmit ? 1 : 0.4 }}>
                 <LinearGradient
-                  colors={[ORANGE, '#FF8C00', GOLD]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                  colors={[GREEN, TEAL]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={{ borderRadius: 16, paddingVertical: 18, alignItems: 'center' }}
                 >
-                  {isLoading ? (
-                    <ActivityIndicator color="#000" size="small" />
-                  ) : (
-                    <Text style={{ fontSize: 15, fontWeight: '900', color: '#000', letterSpacing: 2 }}>
-                      ACCEDI
-                    </Text>
-                  )}
+                  {isLoading
+                    ? <ActivityIndicator color="#000" size="small" />
+                    : <Text style={{ fontSize: 15, fontWeight: '900', color: '#000', letterSpacing: 2 }}>ACCEDI</Text>
+                  }
                 </LinearGradient>
               </TouchableOpacity>
             </View>
 
-            {/* Switch */}
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Register')}
-              style={{ alignItems: 'center', marginTop: 28, paddingVertical: 8 }}
-            >
+            <TouchableOpacity onPress={() => navigation.navigate('Register')} style={{ alignItems: 'center', marginTop: 28, paddingVertical: 8 }}>
               <Text style={{ fontSize: 14, color: SUB }}>
                 Non hai un account?{' '}
-                <Text style={{ color: ORANGE, fontWeight: '700' }}>Registrati</Text>
+                <Text style={{ color: GREEN, fontWeight: '700' }}>Registrati</Text>
               </Text>
             </TouchableOpacity>
           </ScrollView>
