@@ -45,11 +45,11 @@ class WorkoutNotifier extends StateNotifier<WorkoutState> {
   final Ref _ref;
 
   Future<void> fetchWeeklyPlan() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final dio = _ref.read(apiClientProvider);
       final res = await dio.get(Endpoints.weeklyPlanCurrent);
-      final plan = WeeklyPlanResponse.fromJson(res.data as Map<String, dynamic>);
+      final plan = _parsePlan(res.data as Map<String, dynamic>);
       final todayKey = _todayKey();
       final todayPlan = plan.days[todayKey];
       state = state.copyWith(weeklyPlan: plan, todayPlan: todayPlan, isLoading: false);
@@ -59,16 +59,30 @@ class WorkoutNotifier extends StateNotifier<WorkoutState> {
   }
 
   Future<void> generateWeeklyPlan() async {
-    state = state.copyWith(isGenerating: true);
+    state = state.copyWith(isGenerating: true, error: null);
     try {
       final dio = _ref.read(apiClientProvider);
       final res = await dio.post(Endpoints.weeklyPlanGenerate);
-      final plan = WeeklyPlanResponse.fromJson(res.data as Map<String, dynamic>);
+      final plan = _parsePlan(res.data as Map<String, dynamic>);
       final todayPlan = plan.days[_todayKey()];
       state = state.copyWith(weeklyPlan: plan, todayPlan: todayPlan, isGenerating: false);
     } catch (_) {
       state = state.copyWith(isGenerating: false);
     }
+  }
+
+  WeeklyPlanResponse _parsePlan(Map<String, dynamic> raw) {
+    final planJson = (raw['plan_json'] as Map<String, dynamic>?) ?? {};
+    final daysRaw = (planJson['days'] as Map<String, dynamic>?) ?? {};
+    // Build the map using the JSON key names the model expects
+    final normalized = <String, dynamic>{
+      'id': raw['id']?.toString() ?? '',
+      'user_id': raw['user_id']?.toString() ?? '',
+      'week_start_date': raw['week_start_date']?.toString() ?? '',
+      'generated_at': raw['generated_at']?.toString() ?? '',
+      'days': daysRaw,
+    };
+    return WeeklyPlanResponse.fromJson(normalized);
   }
 
   Future<void> startSession({String? planId}) async {
