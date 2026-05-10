@@ -37,12 +37,8 @@ dependencies:
   json_annotation: ^4.9.0
   equatable: ^2.0.5
 
-  # Camera & Barcode
-  mobile_scanner: ^5.2.3
+  # Camera (barcode & photo — add back when implementing those features)
   image_picker: ^1.1.2
-
-  # Health
-  health: ^10.2.0
 
 dev_dependencies:
   flutter_test:
