@@ -464,12 +464,14 @@ class _TodayWorkoutCard extends ConsumerWidget {
           children: [
             const Text('🛡️', style: TextStyle(fontSize: 28)),
             const Gap(AppSpacing.base),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Giorno di riposo', style: Theme.of(context).textTheme.titleMedium),
-                Text(today?.restMotivation ?? 'Recupera e ricarica.', style: Theme.of(context).textTheme.bodySmall),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Giorno di riposo', style: Theme.of(context).textTheme.titleMedium),
+                  Text(today?.restMotivation ?? 'Recupera e ricarica.', style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
             ),
           ],
         ),
