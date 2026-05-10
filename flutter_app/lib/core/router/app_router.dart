@@ -18,35 +18,59 @@ import '../../features/nutrition/screens/food_log_screen.dart';
 import '../../features/nutrition/screens/food_search_screen.dart';
 import '../../features/progress/screens/progress_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../core/constants/app_colors.dart';
+
+class _AuthRefreshListenable extends ChangeNotifier {
+  _AuthRefreshListenable(Ref ref) {
+    _sub = ref.listen<AuthState>(authProvider, (_, __) => notifyListeners());
+  }
+
+  late final ProviderSubscription<AuthState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final listenable = _AuthRefreshListenable(ref);
 
-  return GoRouter(
-    initialLocation: '/home',
+  final router = GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: listenable,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      final location = state.matchedLocation;
+      final onSplash = location == '/splash';
+      final onAuth = location.startsWith('/login') || location.startsWith('/register');
+      final onOnboarding = location.startsWith('/onboarding');
+
       return authState.when(
         initial: () => null,
         loading: () => null,
         authenticated: (user) {
-          final isAuthRoute = state.matchedLocation.startsWith('/login') ||
-              state.matchedLocation.startsWith('/register');
-          if (isAuthRoute) return '/home';
-          if (!user.onboardingCompleted &&
-              !state.matchedLocation.startsWith('/onboarding')) {
+          if (onSplash || onAuth) {
+            return user.onboardingCompleted ? '/home' : '/onboarding/welcome';
+          }
+          if (!user.onboardingCompleted && !onOnboarding) {
             return '/onboarding/welcome';
           }
           return null;
         },
         unauthenticated: () {
-          final isAuthRoute = state.matchedLocation.startsWith('/login') ||
-              state.matchedLocation.startsWith('/register');
-          return isAuthRoute ? null : '/login';
+          if (onAuth) return null;
+          return '/login';
         },
         error: (_) => '/login',
       );
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (_, __) => const _SplashScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(
@@ -95,4 +119,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(() {
+    listenable.dispose();
+    router.dispose();
+  });
+
+  return router;
 });
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+          strokeWidth: 2,
+        ),
+      ),
+    );
+  }
+}
