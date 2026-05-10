@@ -27,7 +27,6 @@ class SettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPadding),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Avatar & name
                 Center(
                   child: Column(
                     children: [
@@ -52,12 +51,8 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ).animate().fadeIn(),
                 const Gap(AppSpacing.xxl),
-
-                // Profile stats
                 _StatsRow(user: user).animate().fadeIn(delay: 100.ms),
                 const Gap(AppSpacing.xl),
-
-                // Settings sections
                 _SettingsSection(
                   title: 'PROFILO',
                   items: [
@@ -67,7 +62,6 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ).animate().fadeIn(delay: 150.ms),
                 const Gap(AppSpacing.base),
-
                 _SettingsSection(
                   title: 'COACH AI',
                   items: [
@@ -76,7 +70,6 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ).animate().fadeIn(delay: 200.ms),
                 const Gap(AppSpacing.base),
-
                 _SettingsSection(
                   title: 'INTEGRAZIONI',
                   items: [
@@ -85,7 +78,6 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ).animate().fadeIn(delay: 250.ms),
                 const Gap(AppSpacing.base),
-
                 _SettingsSection(
                   title: 'APP',
                   items: [
@@ -95,7 +87,6 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ).animate().fadeIn(delay: 300.ms),
                 const Gap(AppSpacing.xl),
-
                 GritButton(
                   label: 'Esci',
                   isDestructive: true,
@@ -112,18 +103,21 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _StatsRow extends StatelessWidget {
-  const _StatsRow({this.user});
+  const _StatsRow({required this.user});
   final dynamic user;
 
   @override
   Widget build(BuildContext context) {
+    final weight = user?.weightKg != null
+        ? '${(user!.weightKg as double).toStringAsFixed(0)} kg'
+        : '--';
     return Row(
       children: [
-        Expanded(child: _StatChip(value: '12', label: 'Sessioni')),
+        Expanded(child: _StatChip(value: '0', label: 'Sessioni')),
         const Gap(AppSpacing.sm),
-        Expanded(child: _StatChip(value: '5', label: 'Streak')),
+        Expanded(child: _StatChip(value: '0', label: 'Streak')),
         const Gap(AppSpacing.sm),
-        Expanded(child: _StatChip(value: '78 kg', label: 'Peso')),
+        Expanded(child: _StatChip(value: weight, label: 'Peso')),
       ],
     );
   }
