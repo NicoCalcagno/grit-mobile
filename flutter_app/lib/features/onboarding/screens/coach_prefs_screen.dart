@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/widgets/grit_button.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 import '../../../models/user_model.dart';
 import '../providers/onboarding_provider.dart';
 
@@ -24,10 +25,17 @@ class CoachPrefsScreen extends ConsumerStatefulWidget {
 class _CoachPrefsScreenState extends ConsumerState<CoachPrefsScreen> {
   CoachTone _tone = CoachTone.motivating;
   CoachLanguage _lang = CoachLanguage.it;
+  bool _saving = false;
 
   Future<void> _finish() async {
-    ref.read(onboardingProvider.notifier).updateCoachPrefs(tone: _tone, language: _lang);
-    await ref.read(onboardingProvider.notifier).save();
+    setState(() => _saving = true);
+    try {
+      ref.read(onboardingProvider.notifier).updateCoachPrefs(tone: _tone, language: _lang);
+      await ref.read(onboardingProvider.notifier).save();
+      await ref.read(authProvider.notifier).refreshUser();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -102,8 +110,8 @@ class _CoachPrefsScreenState extends ConsumerState<CoachPrefsScreen> {
               ).animate().fadeIn(delay: 350.ms),
               const Spacer(),
               GritButton(
-                label: 'Inizia con Grit 🚀',
-                onPressed: _finish,
+                label: _saving ? 'Salvataggio...' : 'Inizia con Grit 🚀',
+                onPressed: _saving ? null : _finish,
               ).animate().fadeIn(delay: 400.ms),
             ],
           ),

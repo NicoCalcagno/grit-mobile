@@ -40,6 +40,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> refreshUser() async {
+    try {
+      final dio = _ref.read(apiClientProvider);
+      final res = await dio.get(Endpoints.me);
+      final user = UserProfile.fromJson(res.data as Map<String, dynamic>);
+      state = AuthState.authenticated(user);
+    } catch (_) {}
+  }
+
   Future<void> login(String email, String password) async {
     state = const AuthState.loading();
     try {
