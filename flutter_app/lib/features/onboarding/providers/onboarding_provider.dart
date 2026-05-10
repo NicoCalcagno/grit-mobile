@@ -4,6 +4,14 @@ import '../../../core/network/endpoints.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../models/user_model.dart';
 
+const _fitnessGoalJsonValues = {
+  FitnessGoal.muscleGain: 'muscle_gain',
+  FitnessGoal.fatLoss: 'fat_loss',
+  FitnessGoal.endurance: 'endurance',
+  FitnessGoal.wellness: 'wellness',
+  FitnessGoal.flexibility: 'flexibility',
+};
+
 class OnboardingData {
   final int age;
   final double weightKg;
@@ -71,7 +79,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingData> {
       'weight_kg': state.weightKg,
       'height_cm': state.heightCm,
       'gender': state.gender,
-      'goals': state.goals.map((g) => g.name).toList(),
+      'goals': state.goals.map((g) => _fitnessGoalJsonValues[g]!).toList(),
       'fitness_level': state.fitnessLevel.name,
       'coach_tone': state.coachTone.name,
       'coach_language': state.coachLanguage.name,
