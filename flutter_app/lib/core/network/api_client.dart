@@ -4,7 +4,7 @@ import '../storage/secure_storage.dart';
 
 const _baseUrl = String.fromEnvironment(
   'GRIT_API_URL',
-  defaultValue: 'https://grit-backend.railway.app',
+  defaultValue: 'https://web-production-af49a.up.railway.app',
 );
 
 final apiClientProvider = Provider<Dio>((ref) {
