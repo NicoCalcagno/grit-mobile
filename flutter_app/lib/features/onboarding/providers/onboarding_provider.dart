@@ -44,7 +44,9 @@ class OnboardingData {
 }
 
 class OnboardingNotifier extends StateNotifier<OnboardingData> {
-  OnboardingNotifier() : super(const OnboardingData());
+  OnboardingNotifier(this._ref) : super(const OnboardingData());
+
+  final Ref _ref;
 
   void updateProfile({required int age, required double weightKg, required double heightCm, required String gender}) {
     state = state.copyWith(age: age, weightKg: weightKg, heightCm: heightCm, gender: gender);
@@ -62,8 +64,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingData> {
     state = state.copyWith(coachTone: tone, coachLanguage: language);
   }
 
-  Future<void> save(Ref ref) async {
-    final dio = ref.read(apiClientProvider);
+  Future<void> save() async {
+    final dio = _ref.read(apiClientProvider);
     await dio.put(Endpoints.me, data: {
       'age': state.age,
       'weight_kg': state.weightKg,
@@ -75,11 +77,11 @@ class OnboardingNotifier extends StateNotifier<OnboardingData> {
       'coach_language': state.coachLanguage.name,
       'onboarding_completed': true,
     });
-    final storage = ref.read(secureStorageProvider);
+    final storage = _ref.read(secureStorageProvider);
     await storage.setOnboardingComplete();
   }
 }
 
 final onboardingProvider = StateNotifierProvider<OnboardingNotifier, OnboardingData>(
-  (ref) => OnboardingNotifier(),
+  (ref) => OnboardingNotifier(ref),
 );

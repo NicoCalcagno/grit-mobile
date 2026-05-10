@@ -43,7 +43,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authProvider) is _Loading;
+    final isLoading = ref.watch(authProvider).maybeWhen(
+      loading: () => true,
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,

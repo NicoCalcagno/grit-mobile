@@ -27,7 +27,7 @@ class _CoachPrefsScreenState extends ConsumerState<CoachPrefsScreen> {
 
   Future<void> _finish() async {
     ref.read(onboardingProvider.notifier).updateCoachPrefs(tone: _tone, language: _lang);
-    await ref.read(onboardingProvider.notifier).save(ref);
+    await ref.read(onboardingProvider.notifier).save();
   }
 
   @override
@@ -48,7 +48,6 @@ class _CoachPrefsScreenState extends ConsumerState<CoachPrefsScreen> {
               Text('Come vuoi che ti parli il tuo AI coach?', style: Theme.of(context).textTheme.bodyMedium)
                   .animate().fadeIn(delay: 100.ms),
               const Gap(AppSpacing.xl),
-              // Tone selector
               ...List.generate(_tones.length, (i) {
                 final t = _tones[i];
                 final isSelected = _tone == t.value;
@@ -92,7 +91,6 @@ class _CoachPrefsScreenState extends ConsumerState<CoachPrefsScreen> {
                 );
               }),
               const Gap(AppSpacing.base),
-              // Language
               Text('Lingua', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColors.textMuted)),
               const Gap(AppSpacing.sm),
               Row(

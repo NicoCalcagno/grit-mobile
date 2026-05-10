@@ -36,20 +36,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _emailCtrl.text.trim(),
           _passCtrl.text,
         );
-    final state = ref.read(authProvider);
-    if (mounted && state is _Error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.message),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
+    if (!mounted) return;
+    ref.read(authProvider).maybeWhen(
+      error: (message) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: AppColors.error),
+        );
+      },
+      orElse: () {},
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authProvider) is _Loading;
+    final isLoading = ref.watch(authProvider).maybeWhen(
+      loading: () => true,
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -62,7 +65,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Gap(AppSpacing.xxxl),
-                // Logo
                 Container(
                   width: 52,
                   height: 52,
@@ -70,63 +72,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     borderRadius: BorderRadius.circular(14),
                     gradient: AppColors.primaryGradient,
                   ),
-                  child: const Icon(
-                    Icons.bolt,
-                    color: Colors.black,
-                    size: 28,
-                  ),
+                  child: const Icon(Icons.bolt, color: Colors.black, size: 28),
                 )
                     .animate()
                     .fadeIn(duration: 600.ms)
                     .slideY(begin: -0.3, end: 0, curve: Curves.easeOut),
                 const Gap(AppSpacing.xl),
-                Text(
-                  'Bentornato.',
-                  style: Theme.of(context).textTheme.displayMedium,
-                )
+                Text('Bentornato.', style: Theme.of(context).textTheme.displayMedium)
                     .animate()
                     .fadeIn(delay: 100.ms, duration: 600.ms)
                     .slideY(begin: 0.2, end: 0),
                 const Gap(AppSpacing.sm),
                 Text(
                   'Accedi per continuare il tuo percorso.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                )
-                    .animate()
-                    .fadeIn(delay: 150.ms, duration: 600.ms),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                ).animate().fadeIn(delay: 150.ms, duration: 600.ms),
                 const Gap(AppSpacing.xxxl),
                 GritTextField(
                   controller: _emailCtrl,
                   label: 'Email',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Inserisci email' : null,
-                )
-                    .animate()
-                    .fadeIn(delay: 200.ms, duration: 500.ms)
-                    .slideX(begin: -0.1, end: 0),
+                  validator: (v) => v == null || v.isEmpty ? 'Inserisci email' : null,
+                ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
                 const Gap(AppSpacing.base),
                 GritTextField(
                   controller: _passCtrl,
                   label: 'Password',
                   obscureText: true,
-                  validator: (v) =>
-                      v == null || v.length < 6 ? 'Password troppo corta' : null,
-                )
-                    .animate()
-                    .fadeIn(delay: 250.ms, duration: 500.ms)
-                    .slideX(begin: -0.1, end: 0),
+                  validator: (v) => v == null || v.length < 6 ? 'Password troppo corta' : null,
+                ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1, end: 0),
                 const Gap(AppSpacing.xl),
                 GritButton(
                   label: 'Accedi',
                   isLoading: isLoading,
                   onPressed: _submit,
-                )
-                    .animate()
-                    .fadeIn(delay: 300.ms, duration: 500.ms)
-                    .slideY(begin: 0.2, end: 0),
+                ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
                 const Gap(AppSpacing.lg),
                 Center(
                   child: GestureDetector(
@@ -138,10 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         children: const [
                           TextSpan(
                             text: 'Registrati',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
