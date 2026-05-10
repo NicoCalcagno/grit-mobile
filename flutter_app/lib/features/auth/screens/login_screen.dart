@@ -23,6 +23,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   @override
+  void initState() {
+    super.initState();
+    // Show errors from auth state
+    ref.listenManual(authProvider, (prev, next) {
+      next.maybeWhen(
+        error: (message) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        },
+        orElse: () {},
+      );
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
@@ -36,15 +56,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _emailCtrl.text.trim(),
           _passCtrl.text,
         );
-    if (!mounted) return;
-    ref.read(authProvider).maybeWhen(
-      error: (message) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: AppColors.error),
-        );
-      },
-      orElse: () {},
-    );
   }
 
   @override
@@ -85,21 +96,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Gap(AppSpacing.sm),
                 Text(
                   'Accedi per continuare il tuo percorso.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
-                ).animate().fadeIn(delay: 150.ms, duration: 600.ms),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ).animate().fadeIn(delay: 150.ms),
                 const Gap(AppSpacing.xxxl),
                 GritTextField(
                   controller: _emailCtrl,
                   label: 'Email',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => v == null || v.isEmpty ? 'Inserisci email' : null,
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Inserisci email' : null,
                 ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
                 const Gap(AppSpacing.base),
                 GritTextField(
                   controller: _passCtrl,
                   label: 'Password',
                   obscureText: true,
-                  validator: (v) => v == null || v.length < 6 ? 'Password troppo corta' : null,
+                  validator: (v) =>
+                      v == null || v.length < 6 ? 'Password troppo corta' : null,
                 ).animate().fadeIn(delay: 250.ms).slideX(begin: -0.1, end: 0),
                 const Gap(AppSpacing.xl),
                 GritButton(
@@ -110,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Gap(AppSpacing.lg),
                 Center(
                   child: GestureDetector(
-                    onTap: () => context.go('/register'),
+                    onTap: () => context.push('/register'),
                     child: RichText(
                       text: TextSpan(
                         text: 'Non hai un account? ',
@@ -118,7 +133,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         children: const [
                           TextSpan(
                             text: 'Registrati',
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
