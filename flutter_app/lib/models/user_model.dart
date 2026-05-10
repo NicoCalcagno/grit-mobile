@@ -71,8 +71,8 @@ class AuthTokens with _$AuthTokens {
   const factory AuthTokens({
     @JsonKey(name: 'access_token') required String accessToken,
     @JsonKey(name: 'refresh_token') required String refreshToken,
-    @JsonKey(name: 'expires_at') String? expiresAt,
-    @JsonKey(name: 'user_id') int? userId,
+    @JsonKey(name: 'expires_at') int? expiresAt,
+    @JsonKey(name: 'user_id') String? userId,
   }) = _AuthTokens;
 
   factory AuthTokens.fromJson(Map<String, dynamic> json) =>
