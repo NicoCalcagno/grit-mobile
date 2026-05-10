@@ -75,7 +75,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(
         path: '/onboarding',
-        redirect: (_, __) => '/onboarding/welcome',
+        redirect: (context, state) =>
+            state.uri.path == '/onboarding' ? '/onboarding/welcome' : null,
         routes: [
           GoRoute(path: 'welcome', builder: (_, __) => const WelcomeScreen()),
           GoRoute(path: 'profile', builder: (_, __) => const ProfileSetupScreen()),
